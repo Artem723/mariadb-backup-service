@@ -1,0 +1,55 @@
+services:
+  # Wordpress DB
+  wordpress-db-service:
+    # We use a mariadb image which supports both amd64 & arm64 architecture
+    image: mariadb:10.6.4-focal
+    #mariadb:10.6.4-focal
+    # If you really want to use MySQL, uncomment the following line
+    #image: mysql:8.0.27
+    command: '--default-authentication-plugin=mysql_native_password --innodb-force-recovery=1'
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backup:/backup-folder
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/m_db_root_pwd
+      - MARIADB_DATABASE=db_name
+      - MARIADB_USER_FILE=/run/secrets/m_db_user_name
+      - MARIADB_PASSWORD_FILE=/run/secrets/m_db_user_pwd
+    expose:
+      - 3306
+      - 33060
+    secrets:
+      - m_db_root_pwd
+      - m_db_user_name
+      - m_db_user_pwd
+  mdb-backup-service:
+    build: ./backup-service
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/m_db_root_pwd
+      - MARIADB_DATABASE=db_name
+      - MARIADB_USER_FILE=/run/secrets/m_db_user_name
+      - MARIADB_PASSWORD_FILE=/run/secrets/m_db_user_pwd
+      
+      # cron string of the back up frequency
+      - CRON_STRING=
+      
+      # Remote location of the backup
+      - REMOTE_USER=
+      - REMOTE_HOST=
+      - REMOTE_PATH=
+      # 
+
+
+
+secrets:
+  m_db_root_pwd:
+    file: ./secrets/m_db_root_pwd
+  m_db_user_name:
+    file: ./secrets/m_db_user_name
+  m_db_user_pwd:
+    file: ./secrets/m_db_user_pwd
+
+
+volumes:
+  db_data:
