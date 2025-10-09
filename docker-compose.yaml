@@ -23,22 +23,22 @@ services:
       - m_db_root_pwd
       - m_db_user_name
       - m_db_user_pwd
-  mdb-backup-service:
-    build: ./backup-service
-    environment:
-      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/m_db_root_pwd
-      - MARIADB_DATABASE=db_name
-      - MARIADB_USER_FILE=/run/secrets/m_db_user_name
-      - MARIADB_PASSWORD_FILE=/run/secrets/m_db_user_pwd
+  # mdb-backup-service:
+  #   build: ./backup-service
+  #   environment:
+  #     - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/m_db_root_pwd
+  #     - MARIADB_DATABASE=db_name
+  #     - MARIADB_USER_FILE=/run/secrets/m_db_user_name
+  #     - MARIADB_PASSWORD_FILE=/run/secrets/m_db_user_pwd
       
-      # cron string of the back up frequency
-      - CRON_STRING=
+  #     # cron string of the back up frequency
+  #     - CRON_STRING=
       
-      # Remote location of the backup
-      - REMOTE_USER=
-      - REMOTE_HOST=
-      - REMOTE_PATH=
-      # 
+  #     # Remote location of the backup
+  #     - REMOTE_USER=
+  #     - REMOTE_HOST=
+  #     - REMOTE_PATH=
+  #     # 
 
 
 
