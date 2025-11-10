@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 ENV_FILE="./.env"
 # make the working directory the place where the script is located
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -22,19 +24,23 @@ report_error_and_exit () {
 }
 
 # check if ENV exists
-if [ -e $ENV_FILE ]; then 
+if [ -e "$ENV_FILE" ]; then 
     source $ENV_FILE
 else
     report_error_and_exit ".env file was not found!"  
 fi
 
-if [ -n $REMOTE_SSH_PORT ]; then
+if [ -n "$REMOTE_SSH_PORT" ]; then
     REMOTE_SSH_PORT=22
 fi
 
-if [ -n $DB_CONTAINER_NAME ]; then
+# inference the DB container name
+if [ -n "$DB_CONTAINER_NAME" ]; then
     DB_CONTAINER_NAME=$(docker compose ps | grep  -G -o  "^[[:alpha:]e-]*$DB_SERVICE_NAME[[:alnum:]-]*")
     log_info "Found the container name [$DB_CONTAINER_NAME] to backup from"
+    if [ -n "$DB_CONTAINER_NAME" ]; then
+        report_error_and_exit "Could not infer the DB container name"
+    fi
 else
     log_info "Back up from [$DB_CONTAINER_NAME]"
 fi
@@ -64,7 +70,3 @@ if [ $? -gt 0 ]; then
 fi
 
 log_info "The backup file has been successfully copied!"
-
-# WORKS last=$(docker compose ps | grep  -G -o  "^[[:alpha:]e-]*$db[[:alnum:]-]*")
-# last=$(docker compose ps | grep  -G -o  "^[[:alpha:]e-]*$DB_SERVICE_NAME[[:alnum:]-]*")
-# last=$(docker compose ps | grep  -G -o  '^[[:alpha:]e-]*wordpress-db-service[[:alnum:]-]*')
