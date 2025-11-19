@@ -1,9 +1,19 @@
 #!/usr/bin/bash
 
+export EMAIL_SMTP_ADDRESS=$EMAIL_SMTP_ADDRESS
+export EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
+export EMAIL_FROM_NAME=$EMAIL_FROM_NAME
+export EMAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
+export EMAIL_RECIPIENTS_ADDRESS_LIST=$EMAIL_RECIPIENTS_ADDRESS_LIST
+export EMAIL_AUTH_USER_NAME=$EMAIL_AUTH_USER_NAME
+export EMAIL_AUTH_USER_PASSWORD=$EMAIL_AUTH_USER_PASSWORD
+
 ENV_FILE="./.env"
 # make the working directory the place where the script is located
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 cd "$SCRIPT_DIR"
+
+
 
 sntx_error_handler() {
     echo -e "[ERROR] An error occurred on line $1. \nCOMMAND: $2"
@@ -20,6 +30,7 @@ log_info () {
 report_error_and_exit () {
     local iso_date=$(date -Iseconds)
     echo "[ERROR][$iso_date] - $1"
+    ./send_email.sh $1
     exit 1
 }
 
@@ -35,10 +46,10 @@ if [ -n "$REMOTE_SSH_PORT" ]; then
 fi
 
 # inference the DB container name
-if [ -n "$DB_CONTAINER_NAME" ]; then
+if [ -z "$DB_CONTAINER_NAME" ]; then
     DB_CONTAINER_NAME=$(docker compose ps | grep  -G -o  "^[[:alpha:]e-]*$DB_SERVICE_NAME[[:alnum:]-]*")
     log_info "Found the container name [$DB_CONTAINER_NAME] to backup from"
-    if [ -n "$DB_CONTAINER_NAME" ]; then
+    if [ -z "$DB_CONTAINER_NAME" ]; then
         report_error_and_exit "Could not infer the DB container name"
     fi
 else
@@ -58,15 +69,29 @@ if [ $? -gt 0 ]; then
 fi
 log_info "Backup is done. The resulted file is $backup_file_name"
 
-log_info "Ensuring the destination directory exists on the remote server..."
-ssh -p $REMOTE_SSH_PORT $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_PATH"
+# log_info "Ensuring the destination directory exists on the remote server..."
+# ssh -p $REMOTE_SSH_PORT $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_PATH"
+# log_info "Copy the backup to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH PORT $REMOTE_SSH_PORT"
+# scp -P $REMOTE_SSH_PORT $backup_file_name "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
 
-log_info "Copy the backup to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH PORT $REMOTE_SSH_PORT"
+log_info "Compressing $backup_file_name ..."
 
-scp -P $REMOTE_SSH_PORT $backup_file_name "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
+archive=$backup_file_name".tar.gz"
+
+tar -czf $archive $backup_file_name
 
 if [ $? -gt 0 ]; then 
-    report_error_and_exit "Could not copy the backup file to the remote!"
+    report_error_and_exit "Could not compress $backup_file_name"
+fi
+
+rm $backup_file_name
+
+log_info "Sending the backup to remote ($REMOTE_HOST)..."
+
+cat $archive | ssh -p $REMOTE_SSH_PORT $REMOTE_USER@$REMOTE_HOST "$RECEIVING_SCRIPT_LOCATION $PROJECT_NAME"
+
+if [ $? -gt 0 ]; then 
+    report_error_and_exit "Could not send the backup file to the remote!"
 fi
 
 log_info "The backup file has been successfully copied!"
