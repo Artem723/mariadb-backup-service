@@ -1,15 +1,22 @@
 #!/usr/bin/bash
 
-EMAIL_RECIPIENTS_ADDRESS_LIST=(
-    "artsiom.sauchuk@uniroma1.it"
-    "marco.dirocco@uniroma1.it"
-    "roberto.carroccia@uniroma1.it"
-    "cansu.tunc@ctlup.com"
-)
 
+ENV_FILE="./.env"
 EMAIL_FILE="email_body.txt"
 RECIPIENT_PARAMS=""
 RECIPIENT_EMAIL_BODY=""
+
+# check if ENV exists
+if [ -e "$ENV_FILE" ]; then 
+    source $ENV_FILE
+    if [ $? -gt 0 ]; then 
+        report_error_and_exit "Error in reading ENV FILE"
+    fi
+else
+    report_error_and_exit ".env file was not found!"  
+fi
+
+echo "RECEPIENTS EMAIL $EMAIL_RECIPIENTS_ADDRESS_LIST"
 # Constructing recipient params list for CURL request 
 for RECIPIENT in "${EMAIL_RECIPIENTS_ADDRESS_LIST[@]}"; do
 
@@ -29,7 +36,6 @@ RECIPIENT_EMAIL_BODY=${RECIPIENT_EMAIL_BODY:0:-2}
 echo "RECIPIENTS_BODY: $RECIPIENT_EMAIL_BODY"
 echo "RECIPIENTS_PARAMS: $RECIPIENT_PARAMS"
 echo "EMAIL_AUTH_USER_NAME: $EMAIL_AUTH_USER_NAME"
-echo "EMAIL_AUTH_USER_PASSWORD: $EMAIL_AUTH_USER_PASSWORD"
 # Preparing email file
 echo -e "From: $EMAIL_FROM_NAME  <$EMAIL_FROM_ADDRESS>
 To: $RECIPIENT_EMAIL_BODY

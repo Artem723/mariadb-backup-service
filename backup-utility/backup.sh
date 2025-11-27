@@ -1,12 +1,5 @@
 #!/usr/bin/bash
 
-export EMAIL_SMTP_ADDRESS=$EMAIL_SMTP_ADDRESS
-export EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
-export EMAIL_FROM_NAME=$EMAIL_FROM_NAME
-export EMAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
-export EMAIL_RECIPIENTS_ADDRESS_LIST=$EMAIL_RECIPIENTS_ADDRESS_LIST
-export EMAIL_AUTH_USER_NAME=$EMAIL_AUTH_USER_NAME
-export EMAIL_AUTH_USER_PASSWORD=$EMAIL_AUTH_USER_PASSWORD
 
 ENV_FILE="./.env"
 # make the working directory the place where the script is located
@@ -16,8 +9,9 @@ cd "$SCRIPT_DIR"
 
 
 sntx_error_handler() {
-    echo -e "[ERROR] An error occurred on line $1. \nCOMMAND: $2"
-    exit 1
+    local ERROR_TXT="[ERROR] An error occurred on line $1. COMMAND: $2"
+    echo -e "$ERROR_TXT"
+    report_error_and_exit "$ERROR_TXT"
 }
 
 trap 'sntx_error_handler $LINENO $BASH_COMMAND' ERR
@@ -37,9 +31,22 @@ report_error_and_exit () {
 # check if ENV exists
 if [ -e "$ENV_FILE" ]; then 
     source $ENV_FILE
+    if [ $? -gt 0 ]; then 
+        report_error_and_exit "Error in reading ENV FILE"
+    fi
 else
     report_error_and_exit ".env file was not found!"  
 fi
+
+# export EMAIL_SMTP_ADDRESS=$EMAIL_SMTP_ADDRESS
+# export EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
+# export EMAIL_FROM_NAME=$EMAIL_FROM_NAME
+# export EMAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
+# export EMAIL_RECIPIENTS_ADDRESS_LIST=$EMAIL_RECIPIENTS_ADDRESS_LIST
+# export EMAIL_AUTH_USER_NAME=$EMAIL_AUTH_USER_NAME
+# export EMAIL_AUTH_USER_PASSWORD=$EMAIL_AUTH_USER_PASSWORD
+# export PROJECT_NAME=$PROJECT_NAME
+# echo "RECEPIENTS $EMAIL_RECIPIENTS_ADDRESS_LIST"
 
 if [ -n "$REMOTE_SSH_PORT" ]; then
     REMOTE_SSH_PORT=22
@@ -88,7 +95,7 @@ rm $backup_file_name
 
 log_info "Sending the backup to remote ($REMOTE_HOST)..."
 
-cat $archive | ssh -p $REMOTE_SSH_PORT $REMOTE_USER@$REMOTE_HOST "$RECEIVING_SCRIPT_LOCATION $PROJECT_NAME"
+ssh -p $REMOTE_SSH_PORT $REMOTE_USER@$REMOTE_HOST "$PROJECT_NAME" < "$archive"
 
 if [ $? -gt 0 ]; then 
     report_error_and_exit "Could not send the backup file to the remote!"
