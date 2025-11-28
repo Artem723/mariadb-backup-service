@@ -24,7 +24,7 @@ log_info () {
 report_error_and_exit () {
     local iso_date=$(date -Iseconds)
     echo "[ERROR][$iso_date] - $1"
-    ./send_email.sh $1
+    ./send_email.sh "$1"
     exit 1
 }
 
@@ -69,6 +69,14 @@ db_pwd=$(cat $MARIADB_PASSWORD_FILE)
 backup_file_name=$BACKUP_FILE_PREFIX"_dump_$MARIADB_DATABASE_NAME""_$(date +%F).sql"
 log_info "Making backup..."
 # make the backup 
+# [IMPORTANT] the user that runs this script should be in the docker group, otherwise the below command will fail with 'Permission denied'
+# If it is insecure for the user to be in the 'docker' group, you can edit suders to allow the user to run a restricted set of sudo commands:
+#   - Edit suders: sudo visudo -f /etc/sudoers.d/backup-ops
+#   - Add the followng line:
+#       # Allow backup-runner to run ONLY this specific command without a password
+#       backup-runner ALL=(root) NOPASSWD: /usr/bin/docker exec <my-db-container> mariadb-dump *
+# In the latter case, the command below should run with sudo: 
+# sudo docker exec...
 docker exec $DB_CONTAINER_NAME mariadb-dump -u $db_user -p$db_pwd $MARIADB_DATABASE_NAME > $backup_file_name 2>error.txt
 
 if [ $? -gt 0 ]; then 
@@ -102,3 +110,4 @@ if [ $? -gt 0 ]; then
 fi
 
 log_info "The backup file has been successfully copied!"
+rm "$archive"

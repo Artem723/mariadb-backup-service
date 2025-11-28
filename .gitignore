@@ -1,3 +1,5 @@
 secrets/*
 *.sql
 backup-utility/.env
+
+*.tar.gz
