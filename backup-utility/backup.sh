@@ -110,4 +110,3 @@ if [ $? -gt 0 ]; then
 fi
 
 log_info "The backup file has been successfully copied!"
-rm "$archive"
